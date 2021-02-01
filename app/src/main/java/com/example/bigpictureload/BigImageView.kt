@@ -49,6 +49,7 @@ class BigImageView @JvmOverloads constructor(
 
     public fun setImage(imageIs: InputStream) {
         mOptions.inJustDecodeBounds = true
+        BitmapFactory.decodeStream(imageIs,null,mOptions)
         mImageWidth = mOptions.outWidth
         mImageHeigh = mOptions.outHeight
         mOptions.inJustDecodeBounds = false
@@ -70,13 +71,6 @@ class BigImageView @JvmOverloads constructor(
         mViewWidth = measuredWidth
         mViewHeight = measuredHeight
 
-
-//        mRect.left = 0
-//        mRect.right = 0
-//        mRect.right = mImageWidth
-//        mScale = mViewWidth / mImageWidth.toFloat()
-//        mRect.bottom = (mViewHeight / mScale).toInt()
-
         //加入缩放因子
         mRect.top = 0
         mRect.left = 0
@@ -94,9 +88,8 @@ class BigImageView @JvmOverloads constructor(
         mBitmap = mDecoder.decodeRegion(mRect, mOptions)
         var matrix = Matrix()
 
-        tempScale =
-
-            matrix.setScale(mScale, mScale)
+        tempScale = mViewHeight / mRect.width().toFloat()
+        matrix.setScale(tempScale, tempScale)
         mBitmap?.let {
             canvas?.drawBitmap(it, matrix, null)
         }
@@ -122,7 +115,7 @@ class BigImageView @JvmOverloads constructor(
         distanceX: Float,
         distanceY: Float
     ): Boolean {
-        mRect.offset(0, distanceY.toInt())
+        mRect.offset(distanceX.toInt(), distanceY.toInt())
         if (mRect.bottom > mImageHeigh) {
             mRect.bottom = mImageHeigh
             mRect.top = mImageHeigh - (mViewHeight / mScale).toInt()
@@ -230,7 +223,7 @@ class BigImageView @JvmOverloads constructor(
 
     override fun onScale(detector: ScaleGestureDetector?): Boolean {
         var scale = mScale
-        scale += detector?.scaleFactor ?: mScale - 1
+        scale += (detector?.scaleFactor ?: mScale - 1)
         if (scale <= originalScale) {
             scale = originalScale
         } else if (scale > originalScale * 2) {
@@ -240,12 +233,12 @@ class BigImageView @JvmOverloads constructor(
         mRect.right = mRect.left + (mViewWidth / scale).toInt()
         mRect.bottom = mRect.bottom + (mViewHeight / scale).toInt()
         mScale = scale
-
-        return super.onScale(detector)
+        invalidate()
+        return false
     }
 
     override fun onScaleBegin(detector: ScaleGestureDetector?): Boolean {
-        return false
+        return true
     }
 
     override fun onScaleEnd(detector: ScaleGestureDetector?) {
